@@ -1,0 +1,14 @@
+[project]
+name = "diagram-to-code"
+version = "0.1.0"
+description = "Convert deep learning model diagrams into executable PyTorch or Keras code"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100

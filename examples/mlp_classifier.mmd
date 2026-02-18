@@ -1,0 +1,8 @@
+graph TD
+    A[Input: shape=784] --> B[Linear: 256]
+    B --> C[ReLU]
+    C --> D[Dropout: 0.5]
+    D --> E[Linear: 128]
+    E --> F[ReLU]
+    F --> G[Linear: 10]
+    G --> H[Softmax]

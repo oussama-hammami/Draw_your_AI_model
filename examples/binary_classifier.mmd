@@ -1,0 +1,7 @@
+graph TD
+    A[Input: shape=20] --> B[Linear: 64]
+    B --> C[ReLU]
+    C --> D[Linear: 32]
+    D --> E[ReLU]
+    E --> F[Linear: 1]
+    F --> G[Sigmoid]

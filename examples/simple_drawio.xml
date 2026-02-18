@@ -1,0 +1,29 @@
+<mxGraphModel>
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    <mxCell id="n1" value="Input: shape=784" vertex="1" parent="1">
+      <mxGeometry x="200" y="40" width="160" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="n2" value="Linear: 256" vertex="1" parent="1">
+      <mxGeometry x="200" y="120" width="160" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="n3" value="ReLU" vertex="1" parent="1">
+      <mxGeometry x="200" y="200" width="160" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="n4" value="Dropout: 0.3" vertex="1" parent="1">
+      <mxGeometry x="200" y="280" width="160" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="n5" value="Linear: 10" vertex="1" parent="1">
+      <mxGeometry x="200" y="360" width="160" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="n6" value="Softmax" vertex="1" parent="1">
+      <mxGeometry x="200" y="440" width="160" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="e1" edge="1" source="n1" target="n2" parent="1"/>
+    <mxCell id="e2" edge="1" source="n2" target="n3" parent="1"/>
+    <mxCell id="e3" edge="1" source="n3" target="n4" parent="1"/>
+    <mxCell id="e4" edge="1" source="n4" target="n5" parent="1"/>
+    <mxCell id="e5" edge="1" source="n5" target="n6" parent="1"/>
+  </root>
+</mxGraphModel>

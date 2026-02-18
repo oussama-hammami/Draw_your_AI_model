@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagram → Code Converter</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #22c55e;
+            --error: #ef4444;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --mono: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        header span {
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 800px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: rgba(255,255,255,0.03);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-body { padding: 1rem; }
+
+        textarea {
+            width: 100%;
+            min-height: 260px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus { border-color: var(--accent); }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        select, button {
+            font-family: var(--font);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        select {
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+        }
+
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            font-weight: 600;
+            transition: background 0.15s;
+        }
+
+        button:hover { background: var(--accent-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+        .code-output {
+            width: 100%;
+            min-height: 260px;
+            background: var(--bg);
+            color: var(--success);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            overflow: auto;
+            white-space: pre;
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .status.info { display: block; background: rgba(59,130,246,0.15); color: var(--accent); }
+        .status.success { display: block; background: rgba(34,197,94,0.15); color: var(--success); }
+        .status.error { display: block; background: rgba(239,68,68,0.15); color: var(--error); }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 6px;
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--muted);
+            cursor: pointer;
+            transition: border-color 0.15s;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover { border-color: var(--accent); }
+        .upload-area input { display: none; }
+
+        .ir-preview {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--muted);
+            max-height: 120px;
+            overflow: auto;
+            background: var(--bg);
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-top: 0.75rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Diagram → Code</h1>
+        <span>Convert deep learning diagrams to PyTorch / Keras code</span>
+    </header>
+
+    <div class="container">
+        <div class="grid">
+            <!-- Left panel: Input -->
+            <div class="panel">
+                <div class="panel-header">
+                    Input Diagram
+                    <select id="format-select">
+                        <option value="">Auto-detect</option>
+                        <option value="mermaid">Mermaid</option>
+                        <option value="drawio">Draw.io XML</option>
+                    </select>
+                </div>
+                <div class="panel-body">
+                    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                        <input type="file" id="file-input" accept=".mmd,.xml,.drawio,.txt">
+                        Drop a file or click to upload (.mmd, .drawio, .xml)
+                    </div>
+                    <textarea id="diagram-input" placeholder="Or paste your Mermaid / Draw.io XML here...
+
+Example:
+graph TD
+    A[Input: shape=784] --> B[Linear: 256]
+    B --> C[ReLU]
+    C --> D[Linear: 10]
+    D --> E[Softmax]"></textarea>
+                    <div class="controls">
+                        <select id="framework-select">
+                            <option value="pytorch">PyTorch</option>
+                            <option value="keras">Keras</option>
+                        </select>
+                        <button id="generate-btn" onclick="generateCode()">Generate Code</button>
+                        <button class="btn-secondary" onclick="loadExample()">Load Example</button>
+                    </div>
+                    <div class="ir-preview" id="ir-preview"></div>
+                    <div class="status" id="status"></div>
+                </div>
+            </div>
+
+            <!-- Right panel: Output -->
+            <div class="panel">
+                <div class="panel-header">
+                    Generated Code
+                    <button class="btn-secondary" id="download-btn" onclick="downloadCode()" disabled>Download .py</button>
+                </div>
+                <div class="panel-body">
+                    <div class="code-output" id="code-output">Generated code will appear here...</div>
+                    <div class="controls">
+                        <button class="btn-secondary" onclick="copyCode()">Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+        let currentSessionId = null;
+        let currentCode = null;
+
+        // ─── File upload handling ───────────────────────────────
+        const fileInput = document.getElementById('file-input');
+        const uploadArea = document.getElementById('upload-area');
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('diagram-input').value = ev.target.result;
+                setStatus(`Loaded: ${file.name}`, 'info');
+            };
+            reader.readAsText(file);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--accent)';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = 'var(--border)';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--border)';
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('diagram-input').value = ev.target.result;
+                setStatus(`Loaded: ${file.name}`, 'info');
+            };
+            reader.readAsText(file);
+        });
+
+        // ─── Main generate flow ─────────────────────────────────
+        async function generateCode() {
+            const diagram = document.getElementById('diagram-input').value.trim();
+            const framework = document.getElementById('framework-select').value;
+            const format = document.getElementById('format-select').value || null;
+            const btn = document.getElementById('generate-btn');
+
+            if (!diagram) {
+                setStatus('Please enter a diagram or upload a file.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Parsing...';
+            setStatus('Parsing diagram...', 'info');
+
+            try {
+                // Step 1: Parse
+                const parseBody = { diagram: diagram };
+                if (format) parseBody.format = format;
+
+                const parseResp = await fetch(`${API}/parse`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(parseBody),
+                });
+
+                if (!parseResp.ok) {
+                    const err = await parseResp.json();
+                    throw new Error(err.detail || 'Parse failed');
+                }
+
+                const parseData = await parseResp.json();
+                currentSessionId = parseData.session_id;
+
+                // Show IR preview
+                const irPreview = document.getElementById('ir-preview');
+                irPreview.textContent = `IR: ${parseData.node_count} nodes, ${parseData.edge_count} edges\n` +
+                    JSON.stringify(parseData.ir, null, 2).slice(0, 500);
+                irPreview.style.display = 'block';
+
+                // Step 2: Generate
+                btn.textContent = 'Generating...';
+                setStatus(`Generating ${framework} code...`, 'info');
+
+                const genResp = await fetch(`${API}/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        framework: framework,
+                    }),
+                });
+
+                if (!genResp.ok) {
+                    const err = await genResp.json();
+                    throw new Error(err.detail || 'Generate failed');
+                }
+
+                const genData = await genResp.json();
+                currentCode = genData.code;
+
+                document.getElementById('code-output').textContent = currentCode;
+                document.getElementById('download-btn').disabled = false;
+                setStatus(`${framework} code generated successfully!`, 'success');
+
+            } catch (err) {
+                setStatus(err.message, 'error');
+                document.getElementById('code-output').textContent = 'Generation failed. Check the error above.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate Code';
+            }
+        }
+
+        // ─── Download ───────────────────────────────────────────
+        function downloadCode() {
+            if (!currentCode) return;
+            const framework = document.getElementById('framework-select').value;
+            const filename = `generated_model_${framework}.py`;
+            const blob = new Blob([currentCode], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ─── Copy to clipboard ──────────────────────────────────
+        async function copyCode() {
+            if (!currentCode) return;
+            try {
+                await navigator.clipboard.writeText(currentCode);
+                setStatus('Copied to clipboard!', 'success');
+            } catch {
+                setStatus('Copy failed — use Ctrl+C manually.', 'error');
+            }
+        }
+
+        // ─── Load example ───────────────────────────────────────
+        function loadExample() {
+            document.getElementById('diagram-input').value =
+`graph TD
+    A[Input: shape=784] --> B[Linear: 256]
+    B --> C[ReLU]
+    C --> D[Dropout: 0.5]
+    D --> E[Linear: 128]
+    E --> F[ReLU]
+    F --> G[Linear: 10]
+    G --> H[Softmax]`;
+            document.getElementById('format-select').value = 'mermaid';
+            setStatus('Example loaded. Click "Generate Code" to proceed.', 'info');
+        }
+
+        // ─── Status bar ─────────────────────────────────────────
+        function setStatus(message, type) {
+            const el = document.getElementById('status');
+            el.textContent = message;
+            el.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>
