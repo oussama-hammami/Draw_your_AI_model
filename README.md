@@ -85,7 +85,7 @@ app/
 ### 1. Clone and set up
 
 ```bash
-cd Project_2
+cd Draw_your_AI_Model
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
